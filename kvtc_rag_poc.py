@@ -34,13 +34,13 @@ except ImportError:
     HAS_NVCOMP = False
 
 # ============================================================================
-# Model config — Llama 3.2 1B
+# Model config — Llama 3.1 8B
 # ============================================================================
-MODEL_ID = "meta-llama/Llama-3.2-1B"
-N_LAYERS = 16
+MODEL_ID = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+N_LAYERS = 32
 N_KV_HEADS = 8
-HEAD_DIM = 64
-CROSS_LAYER_DIM = N_LAYERS * N_KV_HEADS * HEAD_DIM  # 8192
+HEAD_DIM = 128
+CROSS_LAYER_DIM = N_LAYERS * N_KV_HEADS * HEAD_DIM  # 32768
 
 ROPE_THETA = 500000.0
 ROPE_FACTOR = 32.0

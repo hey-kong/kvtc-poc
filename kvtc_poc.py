@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-kvtc PoC v3: KV Cache Transform Coding for Llama 3.2 1B
+kvtc PoC v3: KV Cache Transform Coding for Llama 3.1 8B
 ========================================================
 Fixes from v2 analysis:
-  1. More calibration tokens (n_samples >> n_features=8192)
+  1. More calibration tokens (n_samples >> n_features=32768)
   2. DP: group components to amortize 32-bit overhead (groups of 16/64)
   3. Vectorized RoPE removal/application (no per-head loops)
   4. Longer test prompt for meaningful overall CR
 
-Llama 3.2 1B: 16L / 8 KV-heads / 64 head_dim / cross_layer_dim=8192
+Llama 3.1 8B: 32L / 8 KV-heads / 128 head_dim / cross_layer_dim=32768
 """
 
 import argparse, time, zlib, struct, math
@@ -20,11 +20,11 @@ import torch
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-MODEL_ID = "meta-llama/Llama-3.2-1B"
-N_LAYERS = 16
+MODEL_ID = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+N_LAYERS = 32
 N_KV_HEADS = 8
-HEAD_DIM = 64
-CROSS_LAYER_DIM = N_LAYERS * N_KV_HEADS * HEAD_DIM  # 8192
+HEAD_DIM = 128
+CROSS_LAYER_DIM = N_LAYERS * N_KV_HEADS * HEAD_DIM  # 32768
 
 ROPE_THETA = 500000.0
 ROPE_FACTOR = 32.0
@@ -123,19 +123,19 @@ class KVTCCalibrator:
                 n_pos = sl - s
 
                 # Vectorized extraction: all layers, all positions at once
-                # pk[li]: [1, 8, sl, 64] → slice [1, 8, s:, 64] → [n_pos, 8, 64]
+                # pk[li]: [1, 8, sl, 128] → slice [1, 8, s:, 128] → [n_pos, 8, 128]
                 k_layers, v_layers = [], []
                 for li in range(N_LAYERS):
-                    k_layers.append(pk[li][0, :, s:, :].permute(1, 0, 2))  # [n_pos, 8, 64]
+                    k_layers.append(pk[li][0, :, s:, :].permute(1, 0, 2))  # [n_pos, 8, 128]
                     v_layers.append(pv[li][0, :, s:, :].permute(1, 0, 2))
 
                 # Vectorized RoPE removal across all positions
-                cos_region = cos_c[s:sl]  # [n_pos, 32]
+                cos_region = cos_c[s:sl]  # [n_pos, 64]
                 sin_region = sin_c[s:sl]
                 for li in range(N_LAYERS):
                     k_layers[li] = remove_rope_batch(k_layers[li], cos_region, sin_region)
 
-                # Cross-layer concat: [n_pos, 16*8*64] = [n_pos, 8192]
+                # Cross-layer concat: [n_pos, 32*8*128] = [n_pos, 32768]
                 keys_mat = torch.cat([k.reshape(n_pos, -1) for k in k_layers], dim=1)
                 vals_mat = torch.cat([v.reshape(n_pos, -1) for v in v_layers], dim=1)
 

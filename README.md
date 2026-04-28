@@ -1,6 +1,6 @@
 # kvtc-test — KV Cache Compression for LLM Inference
 
-Proof-of-concept implementation of NVIDIA's **kvtc** (KV Cache Transform Coding) paper ([arXiv:2511.01815](https://arxiv.org/abs/2511.01815)), applied to **Llama 3.2 1B**.
+Proof-of-concept implementation of NVIDIA's **kvtc** (KV Cache Transform Coding) paper ([arXiv:2511.01815](https://arxiv.org/abs/2511.01815)), applied to **Llama 3.1 8B**.
 
 ## What problem does this solve?
 
@@ -46,7 +46,7 @@ python kvtc_poc_gpu.py --calibration-samples 128 --target-cr 16 --max-cal-len 20
 python kvtc_rag_poc.py --target-cr 16 --num-turns 4
 ```
 
-## Results (Llama 3.2 1B-Instruct, 862 tokens, CR=16×)
+## Results (Llama 3.1 8B-Instruct, 862 tokens, CR=16×)
 
 | Metric | CPU (zlib) | GPU (nvCOMP) |
 |---|---|---|
